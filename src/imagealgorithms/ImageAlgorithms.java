@@ -141,6 +141,7 @@ public class ImageAlgorithms extends Application {
                 destinationImage.setRGB(width, height, 65536 * redAvg + 256 * greenAvg + blueAvg); // setRGB() takes the integer value of an rgb color
             }
         }
+        // TODO: Why does ImageView not display after blur of image bigger than 1000 x 1000 ish ??!?
         iv.setImage(updateDisplay());
         System.out.println("Simple Blur complete!");
     }
