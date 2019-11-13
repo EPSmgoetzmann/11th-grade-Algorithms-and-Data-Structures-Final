@@ -103,7 +103,7 @@ public class ImageAlgorithms extends Application {
         if (tmp != null) {
             System.out.println("Image loaded");
             sourceImage = ImageIO.read(tmp);
-            destinationImage = sourceImage; // Not redundant
+            destinationImage = sourceImage; // Not redundant I swear
             imageHeight = sourceImage.getHeight() - 1;
             imageWidth = sourceImage.getWidth() - 1;
             iv.setImage(updateDisplay());
@@ -111,12 +111,12 @@ public class ImageAlgorithms extends Application {
         }
     }
 
-    public Image updateDisplay() {
+    public static Image updateDisplay() {
         sourceImage = destinationImage;
         return SwingFXUtils.toFXImage(sourceImage, null); // Takes buffered image and converts it back to an ImageView displayable image
     }
 
-    public void boxBlur(ImageView iv) {
+    public static void boxBlur(ImageView iv) {
         if (iv.getImage() == null) {
             return;
         }
@@ -124,6 +124,7 @@ public class ImageAlgorithms extends Application {
         // TODO: x and y variable names instead of width and height
         for (int height = 0; height <= imageHeight; height++) {
             for (int width = 0; width <= imageWidth; width++) {
+                // TODO: Optimize 99.9 percent of calculations by isolating edge cases in a seperate function
                 kernel = new int[][]{ // Contruct RGB array to manipulate. Edges are accounted for in construction
                     {(height == 0 || width == 0) ? sourceImage.getRGB(width, height) : sourceImage.getRGB(width - 1, height - 1), (height == 0) ? sourceImage.getRGB(width, height) : sourceImage.getRGB(width, height - 1), (height == 0 || width >= imageWidth) ? sourceImage.getRGB(width, height) : sourceImage.getRGB(width + 1, height - 1)},
                     {(width == 0) ? sourceImage.getRGB(width, height) : sourceImage.getRGB(width - 1, height), sourceImage.getRGB(width, height), (width == imageWidth) ? sourceImage.getRGB(width, height) : sourceImage.getRGB(width + 1, height)},
@@ -143,7 +144,7 @@ public class ImageAlgorithms extends Application {
                 destinationImage.setRGB(width, height, 65536 * redAvg + 256 * greenAvg + blueAvg); // setRGB() takes the integer value of an rgb color
             }
         }
-        // TODO: Why does ImageView not display after blur of image bigger than 1000 x 1000 ish ??!?
+        // TODO: Why does ImageView not display after blur of image bigger than 1000 x 1000 ish 
         iv.setImage(updateDisplay());
         System.out.println("Simple Blur complete!");
     }
@@ -173,21 +174,23 @@ public class ImageAlgorithms extends Application {
 
     // Bitwise operations that java.util.Color does with getRed() methods from an integer representation of rgb. Impletementing these directly eliminates "Color" object creation
     // https://stackoverflow.com/questions/2615522/java-bufferedimage-getting-red-green-and-blue-individually
-    public int getRed(int n) {
+    public static int getRed(int n) {
         return (n >> 16) & 0xFF;
     }
 
-    public int getGreen(int n) {
+    public static int getGreen(int n) {
         return (n >> 8) & 0xFF;
     }
 
-    public int getBlue(int n) {
+    public static int getBlue(int n) {
         return n & 0xFF;
     }
 
-    public int gaussianFunction(int x) {
+    public long gaussianFunction(int x) {
         //TODO
 
+        
+        
         //
         return 0;
     }
