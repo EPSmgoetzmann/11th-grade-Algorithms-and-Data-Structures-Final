@@ -8,7 +8,7 @@
   </information>
   <resources>
     <j2se version="1.6+" href="http://java.sun.com/products/autodl/j2se"/>
-    <jar href="ImageAlgorithmsMG.jar" size="4669" download="eager" />
+    <jar href="ImageAlgorithmsMG.jar" size="4680" download="eager" />
   </resources>
   <jfx:javafx-desc  width="800" height="600" main-class="imagealgorithms.ImageAlgorithms"  name="ImageAlgorithmsMG" />
   <update check="always"/>

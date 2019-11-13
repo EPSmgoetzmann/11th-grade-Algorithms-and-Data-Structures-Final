@@ -120,9 +120,11 @@ public class ImageAlgorithms extends Application {
         if (iv.getImage() == null) {
             return;
         }
+        int[][] kernel;
+        // TODO: x and y variable names instead of width and height
         for (int height = 0; height <= imageHeight; height++) {
             for (int width = 0; width <= imageWidth; width++) {
-                int[][] kernel = new int[][]{ // Contruct RGB array to manipulate. Edges are accounted for in construction
+                kernel = new int[][]{ // Contruct RGB array to manipulate. Edges are accounted for in construction
                     {(height == 0 || width == 0) ? sourceImage.getRGB(width, height) : sourceImage.getRGB(width - 1, height - 1), (height == 0) ? sourceImage.getRGB(width, height) : sourceImage.getRGB(width, height - 1), (height == 0 || width >= imageWidth) ? sourceImage.getRGB(width, height) : sourceImage.getRGB(width + 1, height - 1)},
                     {(width == 0) ? sourceImage.getRGB(width, height) : sourceImage.getRGB(width - 1, height), sourceImage.getRGB(width, height), (width == imageWidth) ? sourceImage.getRGB(width, height) : sourceImage.getRGB(width + 1, height)},
                     {(height >= imageHeight || width == 0) ? sourceImage.getRGB(width, height) : sourceImage.getRGB(width - 1, height + 1), (height >= imageHeight) ? sourceImage.getRGB(width, height) : sourceImage.getRGB(width, height + 1), (height >= imageHeight || width >= imageWidth) ? sourceImage.getRGB(width, height) : sourceImage.getRGB(width + 1, height + 1)}
