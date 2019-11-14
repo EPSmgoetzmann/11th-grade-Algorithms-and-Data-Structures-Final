@@ -150,7 +150,8 @@ public class ImageAlgorithms extends Application {
     }
 
     public void gaussianBlur(ImageView iv, TextField tf) {
-        int magnitude = 3;
+        final int DEFAULT_BLUR_MAGNITUDE = 3;
+        int magnitude = DEFAULT_BLUR_MAGNITUDE;
         try {
             magnitude = Integer.parseInt(tf.getText());
         } catch (NumberFormatException exception) {
@@ -188,10 +189,11 @@ public class ImageAlgorithms extends Application {
 
     public long gaussianFunction(int x) {
         //TODO
-
+        float blurFactor = x / 10;
         
         
         //
+        // Return the ratio at which to contribute the pixel
         return 0;
     }
 }
