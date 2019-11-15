@@ -235,30 +235,32 @@ public class ImageAlgorithms extends Application {
     }
 
     // Gaussian Wikipedia: https://en.wikipedia.org/wiki/Gaussian_blur
+    // Performs blurs over all pixels horizontally and then all pixels vertically in O(2n)
     public int gaussianFunctionHorizontal(int blurIntensity, int x, int y) {
         double redAvg = 0, blueAvg = 0, greenAvg = 0;
         int loops = 0;
-        while (loops <= blurIntensity * 3) {
+        while (loops <= blurIntensity * 3) { // The algorithm takes the rgb values of pixels loop tiles away on the x axis and applies the Gaussian function to determine the ratio to which the rgb value to the blurred pixel
             // Math checks out when function corroborated on Desmos
+            // GAUSSIAN ALGORITHM
             double blurContributionRatio = (double) ((1 / Math.sqrt(Math.PI * 2 * Math.pow(blurIntensity, 2))) * Math.pow(Math.E, (-1 * Math.pow(loops, 2) / (2 * Math.pow(blurIntensity, 2)))));
             redAvg += getRed(sourceImage.getRGB((x + loops > imageWidth) ? x : x + loops, y)) * blurContributionRatio;
             greenAvg += getGreen(sourceImage.getRGB((x + loops > imageWidth) ? x : x + loops, y)) * blurContributionRatio;
             blueAvg += getBlue(sourceImage.getRGB((x + loops > imageWidth) ? x : x + loops, y)) * blurContributionRatio;
             loops++;
         }
-        loops = -1;
-        while (loops >= -1 * blurIntensity * 3) {
+        loops = -1; // Pixels behind the current target have to be checked as well 
+        while (loops >= -1 * blurIntensity * 3) { // As a general rule, blurIntensity * 3 is the point at which the rgb ratio additions become negligable
             double blurContributionRatio = (double) ((1 / Math.sqrt(Math.PI * 2 * Math.pow(blurIntensity, 2))) * Math.pow(Math.E, (-1 * Math.pow(loops, 2) / (2 * Math.pow(blurIntensity, 2)))));
             redAvg += getRed(sourceImage.getRGB((x + loops < 0) ? x : x + loops, y)) * blurContributionRatio;
             greenAvg += getGreen(sourceImage.getRGB((x + loops < 0) ? x : x + loops, y)) * blurContributionRatio;
             blueAvg += getBlue(sourceImage.getRGB((x + loops < 0) ? x : x + loops, y)) * blurContributionRatio;
             loops--;
         }
-
         // Return the ratio at which to contribute the pixel
         return 65536 * (int) (redAvg) + 256 * (int) (greenAvg) + (int) (blueAvg);
     }
 
+    // Everything from above applies to below, but with the targets of the blur being along the y axis
     public int gaussianFunctionVertical(int blurIntensity, int x, int y) {
         double redAvg = 0, blueAvg = 0, greenAvg = 0;
         int loops = 0;
@@ -325,12 +327,11 @@ public class ImageAlgorithms extends Application {
 //                red = (int)(red * contrastScaling);
 //                green = (int)(green * contrastScaling);
 //                blue = (int)(blue * contrastScaling);
-                edge = (int)(edge * contrastScaling);
-                edge = 0xff000000 | (edge << 16) | (edge << 8) | edge;
+                edge = (int)(edge * contrastScaling); // Apply gradient ratio
+                edge = 0xff000000 | (edge << 16) | (edge << 8) | edge; // Gonna be honest, I don't know how this words even after research. But with the rgb manipulation above, the entire image was on a blue gradient
                 destinationImage.setRGB(x, y, edge);
             }
         }
-       
         iv.setImage(updateDisplay());
         System.out.println("Edge Detection Complete!");
     }
