@@ -136,13 +136,13 @@ public class ImageAlgorithms extends Application {
         if (originalImage == null) {
             return;
         }
-        destinationImage = deepCopy(originalImage);
+        destinationImage = deepCopy(originalImage); // Refer to destinationImage, then duplicate it into the destinationImage. updateImage() will handle the rest of the image syncronization
         iv.setImage(updateDisplay());
         System.out.println("Revert Successful!");
     }
 
     public static Image updateDisplay() {
-        sourceImage = deepCopy(destinationImage);
+        sourceImage = deepCopy(destinationImage); // destinationImage is the new base for manipulation: the source!
         return SwingFXUtils.toFXImage(sourceImage, null); // Takes buffered image and converts it back to an ImageView displayable image
     }
 
@@ -227,15 +227,14 @@ public class ImageAlgorithms extends Application {
     public static int getRed(int n) {
         return (n >> 16) & 0xFF;
     }
-
     public static int getGreen(int n) {
         return (n >> 8) & 0xFF;
     }
-
     public static int getBlue(int n) {
         return n & 0xFF;
     }
 
+    // Gaussian Wikipedia: https://en.wikipedia.org/wiki/Gaussian_blur
     public int gaussianFunctionHorizontal(int blurIntensity, int x, int y) {
         double redAvg = 0, blueAvg = 0, greenAvg = 0;
         int loops = 0;
@@ -282,10 +281,13 @@ public class ImageAlgorithms extends Application {
         return 65536 * (int) (redAvg) + 256 * (int) (greenAvg) + (int) (blueAvg);
     }
 
+    // Sobel Operation Wikipedia: https://en.wikipedia.org/wiki/Sobel_operator
+    // StackOverflow that guided my code strucutre: https://stackoverflow.com/questions/41468661/sobel-edge-detecting-program-in-java
     public void findEdges(ImageView iv) {
         if (iv.getImage() == null) {
             return;
         }
+        final int SOBEL_OP_LOW = 1, SOBEL_OP_HIGH = 2;
         int[][] storedEdgeGrays = new int[imageWidth + 1][imageHeight + 1];
         int[][] kernel;
         int maxContrast = 0; 
@@ -295,25 +297,26 @@ public class ImageAlgorithms extends Application {
                 // Gradients used: [-1,0,1]   [-1,-2,-1]
                 //                 [-2,0,2] & [0, 0, 0]
                 //                 [-1,0,1]   [1, 2, 1]
+                // Other possiblities: {1,2,1} & {3,10,3} & {47,162,47}
                 kernel = new int[][]{ // Contruct RGB array to manipulate. Edges are accounted for in construction
                     {(x == 0 || y == 0) ? sourceImage.getRGB(x, y) : sourceImage.getRGB(x - 1, y - 1), (y == 0) ? sourceImage.getRGB(x, y) : sourceImage.getRGB(x, y - 1), (y == 0 || x >= imageWidth) ? sourceImage.getRGB(x, y) : sourceImage.getRGB(x + 1, y - 1)},
                     {(x == 0) ? sourceImage.getRGB(x, y) : sourceImage.getRGB(x - 1, y), 0, (x == imageWidth) ? sourceImage.getRGB(x, y) : sourceImage.getRGB(x + 1, y)},
                     {(y >= imageHeight || x == 0) ? sourceImage.getRGB(x, y) : sourceImage.getRGB(x - 1, y + 1), (y >= imageHeight) ? sourceImage.getRGB(x, y) : sourceImage.getRGB(x, y + 1), (y >= imageHeight || x >= imageWidth) ? sourceImage.getRGB(x, y) : sourceImage.getRGB(x + 1, y + 1)}
                 };
-                int gradient1 = (getGrayscaleInt(kernel[0][0]) * -1) + (getGrayscaleInt(kernel[2][0]))
-                        + (getGrayscaleInt(kernel[0][1]) * -2) + (getGrayscaleInt(kernel[2][1]) * 2)
-                        + (getGrayscaleInt(kernel[0][2]) * -1) + (getGrayscaleInt(kernel[2][2]));
-                int gradient2 = (getGrayscaleInt(kernel[0][0]) * -1) + (getGrayscaleInt(kernel[1][0]) * -2) + (getGrayscaleInt(kernel[2][0]) * -1)
-                        + (getGrayscaleInt(kernel[0][2])) + (getGrayscaleInt(kernel[1][2]) * 2) + (getGrayscaleInt(kernel[2][2]));
-                int edgeContrastValue = (int) Math.sqrt(Math.pow(gradient1, 2) + Math.pow(gradient2, 2));
-                if (edgeContrastValue > maxContrast) {
+                int gradient1 = (getGrayscaleInt(kernel[0][0]) * -1 * SOBEL_OP_LOW) + (getGrayscaleInt(kernel[2][0]) * SOBEL_OP_LOW)
+                        + (getGrayscaleInt(kernel[0][1]) * -1 * SOBEL_OP_HIGH) + (getGrayscaleInt(kernel[2][1]) * SOBEL_OP_HIGH)
+                        + (getGrayscaleInt(kernel[0][2]) * -1 * SOBEL_OP_LOW) + (getGrayscaleInt(kernel[2][2]) * SOBEL_OP_LOW);
+                int gradient2 = (getGrayscaleInt(kernel[0][0]) * -1 * SOBEL_OP_LOW) + (getGrayscaleInt(kernel[1][0]) * -1 * SOBEL_OP_HIGH) + (getGrayscaleInt(kernel[2][0]) * -1 * SOBEL_OP_LOW)
+                        + (getGrayscaleInt(kernel[0][2]) * SOBEL_OP_LOW) + (getGrayscaleInt(kernel[1][2]) * SOBEL_OP_HIGH) + (getGrayscaleInt(kernel[2][2]) * SOBEL_OP_LOW);
+                int edgeContrastValue = (int) Math.sqrt(Math.pow(gradient1, 2) + Math.pow(gradient2, 2)); // The algorithm that defines this operation: root(GradientKernelA^2 + GradientKernelB^2)
+                if (edgeContrastValue > maxContrast) { // Keeping track of the highest contrast is necessary to find the range of gradients in the photo
                     maxContrast = edgeContrastValue;
                 }
-                storedEdgeGrays[x][y] = edgeContrastValue;
+                storedEdgeGrays[x][y] = edgeContrastValue; // Save whatever grayscale int we get before setting to destination because we need knowledge of the gradient range (see above)
             }
         }
         
-        double contrastScaling = 255.0 / maxContrast;
+        double contrastScaling = 255.0 / maxContrast; // Scaling of grayscale to match distribution of values across the image
         
         for (int y = 0; y <= imageHeight; y++) {
             for (int x = 0; x <= imageWidth; x++) {
