@@ -164,22 +164,26 @@ public class ImageAlgorithms extends Application {
             return;
         }
         // Do a pass only along the vertical axis first. The full Gaussian Blur can be achieved through two passes
+        System.out.println(getRed(destinationImage.getRGB(100, 100)) + ", " + getGreen(destinationImage.getRGB(100, 100)) + ", " + getBlue(destinationImage.getRGB(100, 100)));
         for (int y = 0; y <= imageHeight; y++) {
             for (int x = 0; x <= imageWidth; x++) {
                 // TODO
-                gaussianFunctionHorizontal(blurIntensity, x, y);
+                destinationImage.setRGB(x, y, gaussianFunctionHorizontal(blurIntensity, x, y));
                 //
             }
         }
+        System.out.println(getRed(destinationImage.getRGB(100, 100)) + ", " + getGreen(destinationImage.getRGB(100, 100)) + ", " + getBlue(destinationImage.getRGB(100, 100)));
         // Vertical blur pass
+        sourceImage = destinationImage;
         for (int y = 0; y <= imageHeight; y++) {
             for (int x = 0; x <= imageWidth; x++) {
                 // TODO
-                
+                destinationImage.setRGB(x, y, gaussianFunctionVertical(blurIntensity, x, y));
                 //
             }
         }
         iv.setImage(updateDisplay());
+        System.out.println(getRed(destinationImage.getRGB(100, 100)) + ", " + getGreen(destinationImage.getRGB(100, 100)) + ", " + getBlue(destinationImage.getRGB(100, 100)));
         System.out.println("Gaussian Blur complete!");
     }
 
@@ -198,41 +202,56 @@ public class ImageAlgorithms extends Application {
     }
 
     public int gaussianFunctionHorizontal(int blurIntensity, int x, int y) {
-        long redAvg = 0, blueAvg = 0, greenAvg = 0; 
+        double redAvg = 0, blueAvg = 0, greenAvg = 0; 
         int positiveLoops = 0;
         while (positiveLoops <= blurIntensity * 3) {
-            // Math here checks out; I proved on Desmos
-            long blurContributionRatio = (long) (Math.pow(((1 / Math.sqrt(Math.PI * 2 * Math.pow(blurIntensity, 2))) * Math.E), (-1 * Math.pow(positiveLoops, 2) / (2 * Math.pow(blurIntensity, 2)))));
+            // Math checks out
+            double blurContributionRatio = (double) ((1 / Math.sqrt(Math.PI * 2 * Math.pow(blurIntensity, 2))) * Math.pow(Math.E, (-1 * Math.pow(positiveLoops, 2) / (2 * Math.pow(blurIntensity, 2)))));
+            redAvg += getRed(sourceImage.getRGB((x + positiveLoops > imageWidth) ? x : x + positiveLoops, y)) * blurContributionRatio;
+            greenAvg += getGreen(sourceImage.getRGB((x + positiveLoops > imageWidth) ? x : x + positiveLoops, y)) * blurContributionRatio;
+            blueAvg += getBlue(sourceImage.getRGB((x + positiveLoops > imageWidth) ? x : x + positiveLoops, y)) * blurContributionRatio;
             positiveLoops++;
         }
         int negativeLoops = -1;
         while (negativeLoops >= -1 * blurIntensity * 3) {
-            long blurContributionRatio = (long) (Math.pow(((1 / Math.sqrt(Math.PI * 2 * Math.pow(blurIntensity, 2))) * Math.E), (-1 * Math.pow(negativeLoops, 2) / (2 * Math.pow(blurIntensity, 2)))));
+            double blurContributionRatio = (double) ((1 / Math.sqrt(Math.PI * 2 * Math.pow(blurIntensity, 2))) * Math.pow(Math.E, (-1 * Math.pow(negativeLoops, 2) / (2 * Math.pow(blurIntensity, 2)))));
+            redAvg += getRed(sourceImage.getRGB((x + negativeLoops < 0) ? x : x + negativeLoops, y)) * blurContributionRatio;
+            greenAvg += getGreen(sourceImage.getRGB((x + negativeLoops < 0) ? x : x + negativeLoops, y)) * blurContributionRatio;
+            blueAvg += getBlue(sourceImage.getRGB((x + negativeLoops < 0) ? x : x + negativeLoops, y)) * blurContributionRatio;
             negativeLoops--;
         }
         
-        long toReturn = 65536 * redAvg + 256 * greenAvg + blueAvg;
+        double toReturn = 65536 * redAvg + 256 * greenAvg + blueAvg;
+        // Return the ratio at which to contribute the pixel
+        return (int) toReturn;
+    }
+    
+    public int gaussianFunctionVertical(int blurIntensity, int x, int y) {
+        double redAvg = 0, blueAvg = 0, greenAvg = 0; 
+        int positiveLoops = 0;
+        while (positiveLoops <= blurIntensity * 3) {
+            // Math checks out
+            double blurContributionRatio = (double) ((1 / Math.sqrt(Math.PI * 2 * Math.pow(blurIntensity, 2))) * Math.pow(Math.E, (-1 * Math.pow(positiveLoops, 2) / (2 * Math.pow(blurIntensity, 2)))));
+            redAvg += getRed(sourceImage.getRGB(x, (y + positiveLoops > imageHeight) ? y : y + positiveLoops)) * blurContributionRatio;
+            greenAvg += getGreen(sourceImage.getRGB(x, (y + positiveLoops > imageHeight) ? y : y + positiveLoops)) * blurContributionRatio;
+            blueAvg += getBlue(sourceImage.getRGB(x, (y + positiveLoops > imageHeight) ? y : y + positiveLoops)) * blurContributionRatio;
+            positiveLoops++;
+        }
+        int negativeLoops = -1;
+        while (negativeLoops >= -1 * blurIntensity * 3) {
+            double blurContributionRatio = (double) ((1 / Math.sqrt(Math.PI * 2 * Math.pow(blurIntensity, 2))) * Math.pow(Math.E, (-1 * Math.pow(negativeLoops, 2) / (2 * Math.pow(blurIntensity, 2)))));
+            redAvg += getRed(sourceImage.getRGB(x, (y + negativeLoops < 0) ? y : y + negativeLoops)) * blurContributionRatio;
+            greenAvg += getGreen(sourceImage.getRGB(x, (y + negativeLoops < 0) ? y : y + negativeLoops)) * blurContributionRatio;
+            blueAvg += getBlue(sourceImage.getRGB(x, (y + negativeLoops < 0) ? y : y + negativeLoops)) * blurContributionRatio;
+            negativeLoops--;
+        }
+        
+        double toReturn = 65536 * redAvg + 256 * greenAvg + blueAvg;
         // Return the ratio at which to contribute the pixel
         return (int) toReturn;
     }
     
     public int testGaus(int blurIntensity, int x, int y) {
-        long redAvg = 0, blueAvg = 0, greenAvg = 0; 
-        int positiveLoops = 0;
-        while (positiveLoops <= blurIntensity * 3) {
-            // Math here checks out; I proved on Desmos
-            long blurContributionRatio = (long) (Math.pow(((1 / Math.sqrt(Math.PI * 2 * Math.pow(blurIntensity, 2))) * Math.E), (-1 * Math.pow(positiveLoops, 2) / (2 * Math.pow(blurIntensity, 2)))));
-            positiveLoops++;
-        }
-        int negativeLoops = -1;
-        while (negativeLoops >= -1 * blurIntensity * 3) {
-            long blurContributionRatio = (long) (Math.pow(((1 / Math.sqrt(Math.PI * 2 * Math.pow(blurIntensity, 2))) * Math.E), (-1 * Math.pow(negativeLoops, 2) / (2 * Math.pow(blurIntensity, 2)))));
-            System.out.println(blurContributionRatio);
-            negativeLoops--;
-        }
-        
-        long toReturn = 65536 * redAvg + 256 * greenAvg + blueAvg;
-        // Return the ratio at which to contribute the pixel
-        return (int) toReturn;
+        return 0;
     }
 }
