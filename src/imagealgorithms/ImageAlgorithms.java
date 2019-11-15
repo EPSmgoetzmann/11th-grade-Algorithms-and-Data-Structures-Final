@@ -198,34 +198,40 @@ public class ImageAlgorithms extends Application {
     }
 
     public int gaussianFunctionHorizontal(int blurIntensity, int x, int y) {
-        //TODO
         long redAvg = 0, blueAvg = 0, greenAvg = 0; 
-        final int MAX_LOOPS_WORTH_BLURRING = 5;
-        int loops = 0;
-        while (loops < MAX_LOOPS_WORTH_BLURRING) {
-            long blurContributionRatio = (long) (Math.pow(((1 / Math.sqrt(Math.PI * 2 * Math.pow(blurIntensity, 2))) * Math.E), (-1 * Math.pow(loops, 2) / (2 * Math.pow(blurIntensity, 2)))));
-            loops++;
+        int positiveLoops = 0;
+        while (positiveLoops <= blurIntensity * 3) {
+            // Math here checks out; I proved on Desmos
+            long blurContributionRatio = (long) (Math.pow(((1 / Math.sqrt(Math.PI * 2 * Math.pow(blurIntensity, 2))) * Math.E), (-1 * Math.pow(positiveLoops, 2) / (2 * Math.pow(blurIntensity, 2)))));
+            positiveLoops++;
+        }
+        int negativeLoops = -1;
+        while (negativeLoops >= -1 * blurIntensity * 3) {
+            long blurContributionRatio = (long) (Math.pow(((1 / Math.sqrt(Math.PI * 2 * Math.pow(blurIntensity, 2))) * Math.E), (-1 * Math.pow(negativeLoops, 2) / (2 * Math.pow(blurIntensity, 2)))));
+            negativeLoops--;
         }
         
         long toReturn = 65536 * redAvg + 256 * greenAvg + blueAvg;
-        //
         // Return the ratio at which to contribute the pixel
         return (int) toReturn;
     }
     
     public int testGaus(int blurIntensity, int x, int y) {
-        //TODO
         long redAvg = 0, blueAvg = 0, greenAvg = 0; 
-        final int MAX_LOOPS_WORTH_BLURRING = 5;
-        int loops = 0;
-        while (loops < MAX_LOOPS_WORTH_BLURRING) {
-            double blurContributionRatio = (double) (Math.pow(((1 / Math.sqrt(Math.PI * 2 * Math.pow(blurIntensity, 2))) * Math.E), (-1 * Math.pow(loops, 2) / (2 * Math.pow(blurIntensity, 2)))));
+        int positiveLoops = 0;
+        while (positiveLoops <= blurIntensity * 3) {
+            // Math here checks out; I proved on Desmos
+            long blurContributionRatio = (long) (Math.pow(((1 / Math.sqrt(Math.PI * 2 * Math.pow(blurIntensity, 2))) * Math.E), (-1 * Math.pow(positiveLoops, 2) / (2 * Math.pow(blurIntensity, 2)))));
+            positiveLoops++;
+        }
+        int negativeLoops = -1;
+        while (negativeLoops >= -1 * blurIntensity * 3) {
+            long blurContributionRatio = (long) (Math.pow(((1 / Math.sqrt(Math.PI * 2 * Math.pow(blurIntensity, 2))) * Math.E), (-1 * Math.pow(negativeLoops, 2) / (2 * Math.pow(blurIntensity, 2)))));
             System.out.println(blurContributionRatio);
-            loops++;
+            negativeLoops--;
         }
         
-        double toReturn = 65536 * redAvg + 256 * greenAvg + blueAvg;
-        //
+        long toReturn = 65536 * redAvg + 256 * greenAvg + blueAvg;
         // Return the ratio at which to contribute the pixel
         return (int) toReturn;
     }
