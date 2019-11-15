@@ -40,6 +40,7 @@ public class ImageAlgorithms extends Application {
     static BufferedImage destinationImage;
     static int imageHeight;
     static int imageWidth;
+    static final int DEFAULT_BLUR_MAGNITUDE = 3;
 
     @Override
     public void start(Stage primaryStage) {
@@ -66,7 +67,7 @@ public class ImageAlgorithms extends Application {
         TextField blurFactor = new TextField();
         blurFactor.setMaxWidth(70);
         blurFactor.setPromptText("blur factor");
-        blurFactor.setText("3");
+        blurFactor.setText(Integer.toString(DEFAULT_BLUR_MAGNITUDE));
         Button filter2 = new Button();
         filter2.setText("Gaussian Blur");
         filter2.setOnAction((e) -> {
@@ -88,6 +89,8 @@ public class ImageAlgorithms extends Application {
         primaryStage.setTitle("Image Manipulation");
         primaryStage.setScene(scene);
         primaryStage.show();
+        
+        testGaus(3, 1, 1);
     }
 
     /**
@@ -150,22 +153,29 @@ public class ImageAlgorithms extends Application {
     }
 
     public void gaussianBlur(ImageView iv, TextField tf) {
-        final int DEFAULT_BLUR_MAGNITUDE = 3;
-        int magnitude = DEFAULT_BLUR_MAGNITUDE;
+        int blurIntensity = DEFAULT_BLUR_MAGNITUDE;
         try {
-            magnitude = Integer.parseInt(tf.getText());
+            blurIntensity = Integer.parseInt(tf.getText());
         } catch (NumberFormatException exception) {
             System.out.println("\"" + tf.getText() + "\" input was not an integer");
-            tf.setText("3");
+            tf.setText(Integer.toString(DEFAULT_BLUR_MAGNITUDE));
         }
         if (iv.getImage() == null) {
             return;
         }
         // Do a pass only along the vertical axis first. The full Gaussian Blur can be achieved through two passes
-        for (int height = 0; height <= imageHeight; height++) {
-            for (int width = 0; width <= imageWidth; width++) {
+        for (int y = 0; y <= imageHeight; y++) {
+            for (int x = 0; x <= imageWidth; x++) {
                 // TODO
-
+                gaussianFunctionHorizontal(blurIntensity, x, y);
+                //
+            }
+        }
+        // Vertical blur pass
+        for (int y = 0; y <= imageHeight; y++) {
+            for (int x = 0; x <= imageWidth; x++) {
+                // TODO
+                
                 //
             }
         }
@@ -187,13 +197,36 @@ public class ImageAlgorithms extends Application {
         return n & 0xFF;
     }
 
-    public long gaussianFunction(int x) {
+    public int gaussianFunctionHorizontal(int blurIntensity, int x, int y) {
         //TODO
-        float blurFactor = x / 10;
+        long redAvg = 0, blueAvg = 0, greenAvg = 0; 
+        final int MAX_LOOPS_WORTH_BLURRING = 5;
+        int loops = 0;
+        while (loops < MAX_LOOPS_WORTH_BLURRING) {
+            long blurContributionRatio = (long) (Math.pow(((1 / Math.sqrt(Math.PI * 2 * Math.pow(blurIntensity, 2))) * Math.E), (-1 * Math.pow(loops, 2) / (2 * Math.pow(blurIntensity, 2)))));
+            loops++;
+        }
         
-        
+        long toReturn = 65536 * redAvg + 256 * greenAvg + blueAvg;
         //
         // Return the ratio at which to contribute the pixel
-        return 0;
+        return (int) toReturn;
+    }
+    
+    public int testGaus(int blurIntensity, int x, int y) {
+        //TODO
+        long redAvg = 0, blueAvg = 0, greenAvg = 0; 
+        final int MAX_LOOPS_WORTH_BLURRING = 5;
+        int loops = 0;
+        while (loops < MAX_LOOPS_WORTH_BLURRING) {
+            double blurContributionRatio = (double) (Math.pow(((1 / Math.sqrt(Math.PI * 2 * Math.pow(blurIntensity, 2))) * Math.E), (-1 * Math.pow(loops, 2) / (2 * Math.pow(blurIntensity, 2)))));
+            System.out.println(blurContributionRatio);
+            loops++;
+        }
+        
+        double toReturn = 65536 * redAvg + 256 * greenAvg + blueAvg;
+        //
+        // Return the ratio at which to contribute the pixel
+        return (int) toReturn;
     }
 }
