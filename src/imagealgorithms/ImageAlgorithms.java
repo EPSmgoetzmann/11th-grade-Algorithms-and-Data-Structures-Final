@@ -4,6 +4,8 @@
 package imagealgorithms;
 
 import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
+import java.awt.image.WritableRaster;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -41,7 +43,7 @@ public class ImageAlgorithms extends Application {
     static BufferedImage originalImage;
     static int imageHeight;
     static int imageWidth;
-    static final int DEFAULT_BLUR_MAGNITUDE = 3;
+    static final int DEFAULT_BLUR_MAGNITUDE = 2;
 
     @Override
     public void start(Stage primaryStage) {
@@ -58,7 +60,7 @@ public class ImageAlgorithms extends Application {
                 Logger.getLogger(ImageAlgorithms.class.getName()).log(Level.SEVERE, null, ex);
             }
         });
-        
+
         Button reset = new Button();
         reset.setText("Revert to Original");
         reset.setOnAction((e) -> {
@@ -81,6 +83,12 @@ public class ImageAlgorithms extends Application {
             gaussianBlur(imgView, blurFactor);
         });
 
+        Button filter3 = new Button();
+        filter3.setText("Gaussian Blur");
+        filter3.setOnAction((e) -> {
+            findEdges(imgView);
+        });
+
         VBox menu = new VBox();
         menu.getChildren().add(fileSelect);
         menu.getChildren().add(reset);
@@ -97,7 +105,7 @@ public class ImageAlgorithms extends Application {
         primaryStage.setTitle("Image Manipulation");
         primaryStage.setScene(scene);
         primaryStage.show();
-        
+
     }
 
     /**
@@ -113,24 +121,33 @@ public class ImageAlgorithms extends Application {
         if (tmp != null) {
             System.out.println("Image loaded");
             sourceImage = ImageIO.read(tmp);
-            destinationImage = sourceImage; // Not redundant I swear
-            originalImage = ImageIO.read(tmp);
+            destinationImage = deepCopy(sourceImage); // Not redundant I swear
+            originalImage = deepCopy(sourceImage);
             imageHeight = sourceImage.getHeight() - 1;
             imageWidth = sourceImage.getWidth() - 1;
             iv.setImage(updateDisplay());
             System.out.println(sourceImage.getHeight() + " height of image | " + sourceImage.getWidth() + " width of image");
         }
     }
-    
+
     public static void resetImage(ImageView iv) {
-        destinationImage = originalImage;
+        destinationImage = deepCopy(originalImage);
         iv.setImage(updateDisplay());
-        System.out.println("Nande?");
+        System.out.println("Revert Successful!");
     }
 
     public static Image updateDisplay() {
-        sourceImage = destinationImage;
+        sourceImage = deepCopy(destinationImage);
         return SwingFXUtils.toFXImage(sourceImage, null); // Takes buffered image and converts it back to an ImageView displayable image
+    }
+
+    // Creates a new identical instance of a BufferedImage (useful for reversion)
+    // Code from: https://stackoverflow.com/questions/3514158/how-do-you-clone-a-bufferedimage
+    static BufferedImage deepCopy(BufferedImage bi) {
+        ColorModel cm = bi.getColorModel();
+        boolean isAlphaPremultiplied = cm.isAlphaPremultiplied();
+        WritableRaster raster = bi.copyData(null);
+        return new BufferedImage(cm, raster, isAlphaPremultiplied, null);
     }
 
     public static void boxBlur(ImageView iv) {
@@ -177,6 +194,11 @@ public class ImageAlgorithms extends Application {
         if (iv.getImage() == null) {
             return;
         }
+        if (blurIntensity <= 0) {
+            blurIntensity = DEFAULT_BLUR_MAGNITUDE;
+            tf.setText(Integer.toString(DEFAULT_BLUR_MAGNITUDE));
+            System.out.println("Blur will not work with values of 0 or less");
+        }
         // Do a pass only along the vertical axis first. The full Gaussian Blur can be achieved through two passes
         //System.out.println(getRed(destinationImage.getRGB(100, 100)) + ", " + getGreen(destinationImage.getRGB(100, 100)) + ", " + getBlue(destinationImage.getRGB(100, 100)));
         for (int y = 0; y <= imageHeight; y++) {
@@ -212,7 +234,7 @@ public class ImageAlgorithms extends Application {
     }
 
     public int gaussianFunctionHorizontal(int blurIntensity, int x, int y) {
-        double redAvg = 0, blueAvg = 0, greenAvg = 0; 
+        double redAvg = 0, blueAvg = 0, greenAvg = 0;
         int loops = 0;
         while (loops <= blurIntensity * 3) {
             // Math checks out when function corroborated on Desmos
@@ -230,13 +252,13 @@ public class ImageAlgorithms extends Application {
             blueAvg += getBlue(sourceImage.getRGB((x + loops < 0) ? x : x + loops, y)) * blurContributionRatio;
             loops--;
         }
-        
+
         // Return the ratio at which to contribute the pixel
-        return 65536 * (int)(redAvg) + 256 * (int)(greenAvg) + (int)(blueAvg);
+        return 65536 * (int) (redAvg) + 256 * (int) (greenAvg) + (int) (blueAvg);
     }
-    
+
     public int gaussianFunctionVertical(int blurIntensity, int x, int y) {
-        double redAvg = 0, blueAvg = 0, greenAvg = 0; 
+        double redAvg = 0, blueAvg = 0, greenAvg = 0;
         int loops = 0;
         while (loops <= blurIntensity * 3) {
             double blurContributionRatio = (double) ((1 / Math.sqrt(Math.PI * 2 * Math.pow(blurIntensity, 2))) * Math.pow(Math.E, (-1 * Math.pow(loops, 2) / (2 * Math.pow(blurIntensity, 2)))));
@@ -254,7 +276,43 @@ public class ImageAlgorithms extends Application {
             loops--;
         }
         // Return the ratio at which to contribute the pixel
-        return 65536 * (int)(redAvg) + 256 * (int)(greenAvg) + (int)(blueAvg);
+        return 65536 * (int) (redAvg) + 256 * (int) (greenAvg) + (int) (blueAvg);
     }
-    
+
+    public void findEdges(ImageView iv) {
+        if (iv.getImage() == null) {
+            return;
+        }
+        int[][] storedEdgeColors = new int[imageWidth][imageHeight];
+        int[][] kernel;
+        int maxContrast = 0;
+        for (int y = 0; y <= imageHeight; y++) {
+            for (int x = 0; x <= imageWidth; x++) {
+                // Sobel Operator
+                // Gradients used: [-1,0,1]   [-1,-2,-1]
+                //                 [-2,0,2] & [0, 0, 0]
+                //                 [-1,0,1]   [1, 2, 1]
+                kernel = new int[][]{ // Contruct RGB array to manipulate. Edges are accounted for in construction
+                    {(y == 0 || y == 0) ? sourceImage.getRGB(y, y) : sourceImage.getRGB(y - 1, y - 1), (y == 0) ? sourceImage.getRGB(x, y) : sourceImage.getRGB(x, y - 1), (y == 0 || x >= imageWidth) ? sourceImage.getRGB(x, y) : sourceImage.getRGB(x + 1, y - 1)},
+                    {(x == 0) ? sourceImage.getRGB(x, y) : sourceImage.getRGB(x - 1, y), sourceImage.getRGB(x, y), (x == imageWidth) ? sourceImage.getRGB(x, y) : sourceImage.getRGB(x + 1, y)},
+                    {(y >= imageHeight || x == 0) ? sourceImage.getRGB(x, y) : sourceImage.getRGB(x - 1, y + 1), (y >= imageHeight) ? sourceImage.getRGB(x, y) : sourceImage.getRGB(x, y + 1), (y >= imageHeight || x >= imageWidth) ? sourceImage.getRGB(x, y) : sourceImage.getRGB(x + 1, y + 1)}
+                };
+                int gradient1 = (kernel[0][0] * -1) + (kernel[2][0])
+                        + (kernel[0][1] * -2) + (kernel[2][1] * 2)
+                        + (kernel[0][2] * -1) + (kernel[2][2]);
+                int gradient2 = (kernel[0][0] * -1) + (kernel[1][0] * -2) + (kernel[2][0] * -1)
+                        + (kernel[0][2]) + (kernel[1][2] * 2) + (kernel[2][2]);
+                int contrast = (int) Math.sqrt(Math.pow(gradient1, 2) + Math.pow(gradient2, 2));
+            }
+        }
+        // TODO: Why does ImageView not display after blur of image bigger than 1000 x 1000 ish 
+        iv.setImage(updateDisplay());
+        System.out.println("Edge Detection Complete!");
+    }
+
+    public int getGrayscaleInt(int rgbInt) {
+        int red = getRed(rgbInt), green = getGreen(rgbInt), blue = getBlue(rgbInt);
+        // Grayscale RGB coefficients are 0.2126 for red, 0.7152 for green, and 0.0722 for blue
+        return (int) (red * 0.2126 + green * 0.7152 + blue * 0.0722);
+    }
 }
