@@ -84,7 +84,7 @@ public class ImageAlgorithms extends Application {
         });
 
         Button filter3 = new Button();
-        filter3.setText("Gaussian Blur");
+        filter3.setText("Edge Finding");
         filter3.setOnAction((e) -> {
             findEdges(imgView);
         });
@@ -95,6 +95,7 @@ public class ImageAlgorithms extends Application {
         menu.getChildren().add(filter1);
         menu.getChildren().add(blurFactor);
         menu.getChildren().add(filter2);
+        menu.getChildren().add(filter3);
 
         StackPane root = new StackPane();
         root.getChildren().add(imgView);
@@ -131,6 +132,9 @@ public class ImageAlgorithms extends Application {
     }
 
     public static void resetImage(ImageView iv) {
+        if (originalImage == null) {
+            return;
+        }
         destinationImage = deepCopy(originalImage);
         iv.setImage(updateDisplay());
         System.out.println("Revert Successful!");
@@ -283,9 +287,9 @@ public class ImageAlgorithms extends Application {
         if (iv.getImage() == null) {
             return;
         }
-        int[][] storedEdgeColors = new int[imageWidth][imageHeight];
+        int[][] storedEdgeGrays = new int[imageWidth + 1][imageHeight + 1];
         int[][] kernel;
-        int maxContrast = 0;
+        int maxContrast = 0; 
         for (int y = 0; y <= imageHeight; y++) {
             for (int x = 0; x <= imageWidth; x++) {
                 // Sobel Operator
@@ -293,19 +297,38 @@ public class ImageAlgorithms extends Application {
                 //                 [-2,0,2] & [0, 0, 0]
                 //                 [-1,0,1]   [1, 2, 1]
                 kernel = new int[][]{ // Contruct RGB array to manipulate. Edges are accounted for in construction
-                    {(y == 0 || y == 0) ? sourceImage.getRGB(y, y) : sourceImage.getRGB(y - 1, y - 1), (y == 0) ? sourceImage.getRGB(x, y) : sourceImage.getRGB(x, y - 1), (y == 0 || x >= imageWidth) ? sourceImage.getRGB(x, y) : sourceImage.getRGB(x + 1, y - 1)},
-                    {(x == 0) ? sourceImage.getRGB(x, y) : sourceImage.getRGB(x - 1, y), sourceImage.getRGB(x, y), (x == imageWidth) ? sourceImage.getRGB(x, y) : sourceImage.getRGB(x + 1, y)},
+                    {(x == 0 || y == 0) ? sourceImage.getRGB(x, y) : sourceImage.getRGB(x - 1, y - 1), (y == 0) ? sourceImage.getRGB(x, y) : sourceImage.getRGB(x, y - 1), (y == 0 || x >= imageWidth) ? sourceImage.getRGB(x, y) : sourceImage.getRGB(x + 1, y - 1)},
+                    {(x == 0) ? sourceImage.getRGB(x, y) : sourceImage.getRGB(x - 1, y), 0, (x == imageWidth) ? sourceImage.getRGB(x, y) : sourceImage.getRGB(x + 1, y)},
                     {(y >= imageHeight || x == 0) ? sourceImage.getRGB(x, y) : sourceImage.getRGB(x - 1, y + 1), (y >= imageHeight) ? sourceImage.getRGB(x, y) : sourceImage.getRGB(x, y + 1), (y >= imageHeight || x >= imageWidth) ? sourceImage.getRGB(x, y) : sourceImage.getRGB(x + 1, y + 1)}
                 };
-                int gradient1 = (kernel[0][0] * -1) + (kernel[2][0])
-                        + (kernel[0][1] * -2) + (kernel[2][1] * 2)
-                        + (kernel[0][2] * -1) + (kernel[2][2]);
-                int gradient2 = (kernel[0][0] * -1) + (kernel[1][0] * -2) + (kernel[2][0] * -1)
-                        + (kernel[0][2]) + (kernel[1][2] * 2) + (kernel[2][2]);
-                int contrast = (int) Math.sqrt(Math.pow(gradient1, 2) + Math.pow(gradient2, 2));
+                int gradient1 = (getGrayscaleInt(kernel[0][0]) * -1) + (getGrayscaleInt(kernel[2][0]))
+                        + (getGrayscaleInt(kernel[0][1]) * -2) + (getGrayscaleInt(kernel[2][1]) * 2)
+                        + (getGrayscaleInt(kernel[0][2]) * -1) + (getGrayscaleInt(kernel[2][2]));
+                int gradient2 = (getGrayscaleInt(kernel[0][0]) * -1) + (getGrayscaleInt(kernel[1][0]) * -2) + (getGrayscaleInt(kernel[2][0]) * -1)
+                        + (getGrayscaleInt(kernel[0][2])) + (getGrayscaleInt(kernel[1][2]) * 2) + (getGrayscaleInt(kernel[2][2]));
+                int edgeContrastValue = (int) Math.sqrt(Math.pow(gradient1, 2) + Math.pow(gradient2, 2));
+                if (edgeContrastValue > maxContrast) {
+                    maxContrast = edgeContrastValue;
+                }
+                storedEdgeGrays[x][y] = edgeContrastValue;
             }
         }
-        // TODO: Why does ImageView not display after blur of image bigger than 1000 x 1000 ish 
+        
+        double contrastScaling = 255.0 / maxContrast;
+        
+        for (int y = 0; y <= imageHeight; y++) {
+            for (int x = 0; x <= imageWidth; x++) {
+                int edge = storedEdgeGrays[x][y];
+//                int red = getRed(edge), green = getGreen(edge), blue = getBlue(edge);
+//                red = (int)(red * contrastScaling);
+//                green = (int)(green * contrastScaling);
+//                blue = (int)(blue * contrastScaling);
+                edge = (int)(edge * contrastScaling);
+                edge = 0xff000000 | (edge << 16) | (edge << 8) | edge;
+                destinationImage.setRGB(x, y, edge);
+            }
+        }
+       
         iv.setImage(updateDisplay());
         System.out.println("Edge Detection Complete!");
     }
