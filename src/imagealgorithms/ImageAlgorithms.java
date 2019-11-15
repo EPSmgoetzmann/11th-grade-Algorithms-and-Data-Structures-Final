@@ -7,16 +7,13 @@ import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
 import java.awt.image.WritableRaster;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javafx.application.Application;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -25,7 +22,6 @@ import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javax.imageio.ImageIO;
@@ -49,6 +45,7 @@ public class ImageAlgorithms extends Application {
     public void start(Stage primaryStage) {
         ImageView imgView = new ImageView();
 
+        // File Select Button
         Button fileSelect = new Button();
         fileSelect.setText("Choose File");
         fileSelect.setOnAction((e) -> {
@@ -61,18 +58,21 @@ public class ImageAlgorithms extends Application {
             }
         });
 
+        // Reset Image to Uneditted Button
         Button reset = new Button();
         reset.setText("Revert to Original");
         reset.setOnAction((e) -> {
             resetImage(imgView);
         });
 
+        // 3x3 Box Blur Button
         Button filter1 = new Button();
         filter1.setText("Box Blur");
         filter1.setOnAction((e) -> {
             boxBlur(imgView);
         });
 
+        // Text Entry Field that takes integers and Gaussian Blur Button that runs the algorithm using the given parameter
         TextField blurFactor = new TextField();
         blurFactor.setMaxWidth(70);
         blurFactor.setPromptText("blur factor");
@@ -83,6 +83,7 @@ public class ImageAlgorithms extends Application {
             gaussianBlur(imgView, blurFactor);
         });
 
+        // Edge Detection Button
         Button filter3 = new Button();
         filter3.setText("Edge Finding");
         filter3.setOnAction((e) -> {
@@ -123,7 +124,7 @@ public class ImageAlgorithms extends Application {
             System.out.println("Image loaded");
             sourceImage = ImageIO.read(tmp);
             destinationImage = deepCopy(sourceImage); // Not redundant I swear
-            originalImage = deepCopy(sourceImage);
+            originalImage = deepCopy(sourceImage); // Set a copy of the untouched image to the side
             imageHeight = sourceImage.getHeight() - 1;
             imageWidth = sourceImage.getWidth() - 1;
             iv.setImage(updateDisplay());
@@ -147,7 +148,7 @@ public class ImageAlgorithms extends Application {
 
     // Creates a new identical instance of a BufferedImage (useful for reversion)
     // Code from: https://stackoverflow.com/questions/3514158/how-do-you-clone-a-bufferedimage
-    static BufferedImage deepCopy(BufferedImage bi) {
+    public static BufferedImage deepCopy(BufferedImage bi) {
         ColorModel cm = bi.getColorModel();
         boolean isAlphaPremultiplied = cm.isAlphaPremultiplied();
         WritableRaster raster = bi.copyData(null);
@@ -159,10 +160,8 @@ public class ImageAlgorithms extends Application {
             return;
         }
         int[][] kernel;
-        // TODO: x and y variable names instead of width and height
         for (int height = 0; height <= imageHeight; height++) {
             for (int width = 0; width <= imageWidth; width++) {
-                // TODO: Optimize 99.9 percent of calculations by isolating edge cases in a seperate function
                 kernel = new int[][]{ // Contruct RGB array to manipulate. Edges are accounted for in construction
                     {(height == 0 || width == 0) ? sourceImage.getRGB(width, height) : sourceImage.getRGB(width - 1, height - 1), (height == 0) ? sourceImage.getRGB(width, height) : sourceImage.getRGB(width, height - 1), (height == 0 || width >= imageWidth) ? sourceImage.getRGB(width, height) : sourceImage.getRGB(width + 1, height - 1)},
                     {(width == 0) ? sourceImage.getRGB(width, height) : sourceImage.getRGB(width - 1, height), sourceImage.getRGB(width, height), (width == imageWidth) ? sourceImage.getRGB(width, height) : sourceImage.getRGB(width + 1, height)},
@@ -171,18 +170,18 @@ public class ImageAlgorithms extends Application {
                 int redAvg = 0, blueAvg = 0, greenAvg = 0;
                 for (int i[] : kernel) {
                     for (int j : i) {
-                        redAvg += getRed(j);
+                        redAvg += getRed(j); // Add all of the R G or B values up
                         greenAvg += getGreen(j);
                         blueAvg += getBlue(j);
                     }
                 }
                 redAvg /= 9; // 9 is size of kernel
-                greenAvg /= 9;
+                greenAvg /= 9; // Really just simple averaging
                 blueAvg /= 9;
                 destinationImage.setRGB(width, height, 65536 * redAvg + 256 * greenAvg + blueAvg); // setRGB() takes the integer value of an rgb color
             }
         }
-        // TODO: Why does ImageView not display after blur of image bigger than 1000 x 1000 ish 
+        // Why does ImageView not display after blur of image bigger than 1000 x 1000 ish? I couldn't say. . . not online, and no answers to my question on StackOverflow
         iv.setImage(updateDisplay());
         System.out.println("Simple Blur complete!");
     }
